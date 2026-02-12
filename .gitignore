@@ -1,0 +1,16 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# Explicit project build outputs
+ThemeParkMCPServer/bin/
+ThemeParkMCPServer/obj/
+
+# User-specific files
+.vs/
+*.user
+*.suo
+
+# .NET local tools and cache
+*.rsuser
+*.cache

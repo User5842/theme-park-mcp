@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "theme-park": {
+      "command": "dotnet",
+      "args": [
+        "/Users/rafaelnegron/Projects/ThemeParkMCP/ThemeParkMCPServer/bin/Debug/net10.0/ThemeParkMCPServer.dll"
+      ]
+    }
+  }
+}
