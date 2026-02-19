@@ -1,25 +1,25 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ModelContextProtocol;
-using ModelContextProtocol.AspNetCore;
 using System.Net.Http.Headers;
+using ThemeParkMCPServer.Clients;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
 builder.Services.AddMcpServer()
-    .WithHttpTransport()
+    .WithStdioServerTransport()
     .WithToolsFromAssembly();
 
-builder.Services.AddSingleton(_ =>
+builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    var client = new HttpClient() { BaseAddress = new Uri("https://api.themeparks.wiki/v1/") };
-    client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("themepark-tool", "1.0"));
-    return client;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
 });
+
+builder.Services.AddHttpClient<IThemeParkClient, ThemeParkClient>()
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri("https://api.themeparks.wiki/v1/");
+    });
 
 var app = builder.Build();
 
-app.MapMcp();
-
-app.Run();
+await app.RunAsync();

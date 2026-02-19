@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build ThemeParkMCPClient",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/ThemeParkMCPClient/ThemeParkMCPClient.csproj",
+        "-v",
+        "minimal"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

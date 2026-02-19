@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug ThemeParkMCPClient",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/ThemeParkMCPClient/bin/Debug/net10.0/ThemeParkMCPClient.dll",
+      "args": [
+        "../ThemeParkMCPServer/ThemeParkMCPServer.csproj"
+      ],
+      "cwd": "${workspaceFolder}/ThemeParkMCPClient",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build ThemeParkMCPClient"
+    }
+  ]
+}

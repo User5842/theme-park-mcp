@@ -2,69 +2,63 @@ using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
+using ThemeParkMCPServer.Clients;
 
 namespace ThemeParkServer.Tools;
 
 [McpServerToolType]
 public static class ThemeParkTools
 {
-    [McpServerTool, Description("Get a list of theme park destinations")]
-    public static async Task<string> GetDestinations(HttpClient client)
+    [McpServerTool, Description("List available theme park destinations. Use this when the user asks for destinations, resorts, or parks at a high level.")]
+    public static async Task<string> GetDestinations(IThemeParkClient client)
     {
         try
         {
-            using var jsonDocument = await client.ReadJsonDocumentAsync("destinations");
-            var jsonElement = jsonDocument.RootElement;
-            var destinations = jsonElement.GetProperty("destinations").EnumerateArray();
+            var destinations = await client.GetDestinations();
 
             if (!destinations.Any())
             {
                 return "No destinations found!";
             }
 
-            return string.Join("\n--\n", destinations.Select(destination => destination.GetProperty("name").GetString()));
+            return string.Join("\n--\n", destinations.Select(destination => destination.Name));
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return $"{e.Message}";
+            return $"{ex.Message}";
         }
     }
 
-    [McpServerTool, Description("Get a list of attractions in a theme park destination")]
+    [McpServerTool, Description("List attractions for one specific destination. Requires a destination name and should not be used for requests that do not name a destination.")]
     public static async Task<string> GetAttractions(
-        HttpClient client,
-        [Description("The name of the destination to fetch attractions for")] string destination)
+        IThemeParkClient client,
+        [Description("Destination name to filter attractions by, for example: Disneyland Resort or Walt Disney World Resort.")] string destination)
     {
-        // 1. Get a list of destinations
-        using var destinationsJsonDocument = await client.ReadJsonDocumentAsync("destinations");
-        var destinationJsonElement = destinationsJsonDocument.RootElement;
-        var destinations = destinationJsonElement.GetProperty("destinations").EnumerateArray();
-        var allDestinations = destinations.SelectMany(destination => destination.GetProperty("parks").EnumerateArray());
+        var destinations = await client.GetDestinations();
 
-        // 2. Filter based on the destination name
-        var foundDestination = allDestinations
-            .FirstOrDefault(dest => dest.GetProperty("name").GetString()?.Contains(
-                destination, StringComparison.OrdinalIgnoreCase
-            ) == true
-        );
+        if (!destinations.Any())
+        {
+            return "No destinations found!";
+        }
 
-        if (foundDestination.ValueKind == JsonValueKind.Undefined)
+        var parks = destinations.SelectMany(destination => destination.Parks);
+
+        var filteredPark = parks
+            .FirstOrDefault(park => park.Name.Contains(destination, StringComparison.OrdinalIgnoreCase));
+
+        if (filteredPark == null)
         {
             return $"No destination with name {destination} was found!";
         }
 
-        // 3. Grab ID of destination name
-        var destinationId = foundDestination.GetProperty("id").GetString();
+        var filteredParkId = filteredPark.Id;
 
-        // 4. Use the children endpoint (https://api.themeparks.wiki/v1/entity/75ea578a-adc8-4116-a54d-dccb60765ef9/children) and grab attractions
-        using var destinationChildrenJsonDocument = await client.ReadJsonDocumentAsync($"entity/{destinationId}/children");
-        var destinationChildrenJsonElement = destinationChildrenJsonDocument.RootElement;
-        var destinationChildren = destinationChildrenJsonElement.GetProperty("children").EnumerateArray();
+        var filteredParkEntity = await client.GetEntity(filteredParkId);
+        var filteredParkEntityChildren = filteredParkEntity.Children;
 
-        // 5. Profit!
-        var destinationChildrenAttractions = destinationChildren
-            .Where(dest => dest.GetProperty("entityType").GetString()?.Equals("ATTRACTION", StringComparison.OrdinalIgnoreCase) == true).ToList();
+        var attractions = filteredParkEntityChildren
+            .Where(child => child.EntityType.Equals("ATTRACTION", StringComparison.OrdinalIgnoreCase));
 
-        return string.Join("\n--n", destinationChildrenAttractions.Select(dest => dest.GetProperty("name").GetString()));
+        return string.Join("\n--\n", attractions.Select(attraction => attraction.Name));
     }
 }
